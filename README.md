@@ -2,9 +2,11 @@
 
 ## Integrantes da equipe
 
-- [nome do integrante 1]
-- [nome do integrante 2]
-- [nome do integrante 3]
+- Bernardo Cardoso Vieira
+- Cauã Almeida Loiola
+- Cintia Trindade Coelho
+- Emanuelly
+- Nayla
 
 ## Tema do sistema
 
