@@ -1,0 +1,109 @@
+// ConnectContábil — Modelo Lógico
+// Site institucional + sistema de agendamento para escritório de contabilidade
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Cliente: empresa local ou empreendedor que contrata/agenda serviços contábeis.
+// Representa o público-alvo descrito na proposta (empresas locais e
+// empreendedores que buscam agilidade e atendimento confiável).
+// ---------------------------------------------------------------------------
+model Cliente {
+  id         String   @id @default(uuid())
+  nome       String
+  email      String   @unique
+  telefone   String? // nem todo cliente informa telefone no primeiro contato (ex: veio só pelo WhatsApp)
+  empresa    String? // opcional porque também atendemos autônomos/MEI sem razão social
+  criadoEm   DateTime @default(now())
+
+  agendamentos Agendamento[]
+  depoimentos  Depoimento[]
+}
+
+// ---------------------------------------------------------------------------
+// Contador: profissional do escritório que realiza os atendimentos agendados.
+// Existe para permitir organização interna de horários por especialista.
+// ---------------------------------------------------------------------------
+model Contador {
+  id           String   @id @default(uuid())
+  nome         String
+  especialidade String  // ex: "Fiscal", "Trabalhista", "Societário"
+  email        String   @unique
+  ativo        Boolean  @default(true) // permite desativar sem apagar o histórico de atendimentos
+  criadoEm     DateTime @default(now())
+
+  agendamentos Agendamento[]
+}
+
+// ---------------------------------------------------------------------------
+// Servico: cada tipo de consulta/serviço contábil oferecido no site
+// (seção "Serviços" da landing page).
+// ---------------------------------------------------------------------------
+model Servico {
+  id              String   @id @default(uuid())
+  nome            String
+  descricao       String
+  duracaoMinutos  Int      // usado para montar a agenda do contador
+  precoBase       Float?  // alguns serviços são "sob consulta", por isso é opcional
+  ativo           Boolean  @default(true) // permite ocultar serviço descontinuado sem apagar histórico
+  criadoEm        DateTime @default(now())
+
+  agendamentos Agendamento[]
+}
+
+// ---------------------------------------------------------------------------
+// Agendamento: consulta marcada por um Cliente, para um Servico, com um
+// Contador responsável. Núcleo do "agendamento inteligente" da proposta.
+// ---------------------------------------------------------------------------
+model Agendamento {
+  id            String   @id @default(uuid())
+  data          DateTime // data e hora marcada
+  status        String   @default("pendente") // pendente | confirmado | concluido | cancelado
+  observacoes   String? // cliente pode não deixar observação ao agendar
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+  clienteId String
+
+  contador   Contador @relation(fields: [contadorId], references: [id])
+  contadorId String
+
+  servico   Servico @relation(fields: [servicoId], references: [id])
+  servicoId String
+}
+
+// ---------------------------------------------------------------------------
+// Depoimento: prova social exibida na landing page, vinculada a um Cliente
+// real que já foi atendido.
+// ---------------------------------------------------------------------------
+model Depoimento {
+  id        String   @id @default(uuid())
+  texto     String
+  nota      Int      // avaliação de 1 a 5
+  aprovado  Boolean  @default(false) // moderação antes de publicar no site
+  criadoEm  DateTime @default(now())
+
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+  clienteId String
+}
+
+// ---------------------------------------------------------------------------
+// Faq: pergunta frequente exibida na seção de FAQ da landing page.
+// Não se relaciona com outras entidades pois é conteúdo institucional
+// independente do fluxo de clientes/agendamentos.
+// ---------------------------------------------------------------------------
+model Faq {
+  id        String   @id @default(uuid())
+  pergunta  String
+  resposta  String
+  ordem     Int? // opcional: controla a ordem de exibição manual no site
+  criadoEm  DateTime @default(now())
+}
